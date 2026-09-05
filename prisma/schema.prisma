@@ -1,0 +1,241 @@
+// Schéma de la base de données MaBoutique Repair
+// Pour démarrer : npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Postgres pour la production (Vercel + Neon/Supabase/Railway...).
+  // Pour retester rapidement en local avec SQLite, remplacez temporairement par :
+  // provider = "sqlite"  et  DATABASE_URL="file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Boutique {
+  id          String   @id @default(cuid())
+  nom         String
+  ville       String?
+  telephone   String?
+  plan        String   @default("free") // free | pro | premium
+  createdAt   DateTime @default(now())
+
+  // --- Profil public (annuaire / marketplace) ---
+  description String?
+  logoUrl     String?
+  whatsapp    String?
+  facebook    String?
+  instagram   String?
+  adresse     String?
+  latitude    Float?
+  longitude   Float?
+  horaires    String? // texte libre, ex: "Lun-Sam 9h-18h"
+  publie      Boolean  @default(false) // profil visible dans la recherche une fois complété
+
+  users    User[]
+  clients  Client[]
+  devices  Device[]
+  repairs  Repair[]
+  stock    StockItem[]
+  invoices Invoice[]
+  services Service[]
+  products Product[]
+  photos   Photo[]
+  orders   Order[]
+  reviews  Review[]
+  demandes RepairRequest[]
+  subscriptionPayments SubscriptionPayment[]
+}
+
+model Service {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  nom        String
+  createdAt  DateTime @default(now())
+
+  @@unique([boutiqueId, nom])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  boutiqueId  String
+  boutique    Boutique @relation(fields: [boutiqueId], references: [id])
+  nom         String
+  description String?
+  prix        Float    @default(0)
+  categorie   String?
+  photoUrl    String?
+  stock       Int      @default(0) // quantité disponible à la vente en ligne
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model RepairRequest {
+  id              String   @id @default(cuid())
+  boutiqueId      String
+  boutique        Boutique @relation(fields: [boutiqueId], references: [id])
+  typeAppareil    String // "Smartphone" | "PC / Laptop" | "Console" | "Tablette" | "Smartwatch" | "Autre"
+  marque          String?
+  modele          String?
+  probleme        String
+  photoUrl        String?
+  clientNom       String
+  clientTelephone String
+  clientEmail     String?
+  statut          String   @default("nouvelle") // nouvelle | devis_envoye | acceptee | refusee | terminee
+  createdAt       DateTime @default(now())
+
+  devis Devis?
+}
+
+model Devis {
+  id          String        @id @default(cuid())
+  requestId   String        @unique
+  request     RepairRequest @relation(fields: [requestId], references: [id])
+  diagnostic  Float         @default(0)
+  piece       Float         @default(0)
+  mainOeuvre  Float         @default(0)
+  total       Float
+  message     String?
+  statut      String        @default("envoye") // envoye | accepte | refuse
+  createdAt   DateTime      @default(now())
+}
+
+model SubscriptionPayment {
+  id          String   @id @default(cuid())
+  boutiqueId  String
+  boutique    Boutique @relation(fields: [boutiqueId], references: [id])
+  plan        String // "pro" | "premium"
+  montant     Float
+  paiementRef String?  @unique
+  statut      String   @default("en_attente") // en_attente | paye | echoue
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  boutiqueId  String
+  boutique    Boutique @relation(fields: [boutiqueId], references: [id])
+  nom         String
+  note        Int // 1 à 5
+  commentaire String?
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  boutiqueId      String
+  boutique        Boutique    @relation(fields: [boutiqueId], references: [id])
+  numero          String      @unique
+  clientNom       String
+  clientTelephone String
+  clientAdresse   String
+  clientVille     String?
+  modePaiement    String // "carte" | "livraison"
+  paiementStatut  String      @default("en_attente") // en_attente | paye | echoue
+  paiementRef     String? // référence renvoyée par la passerelle de paiement (Konnect)
+  statut          String      @default("nouvelle") // nouvelle | preparee | expediee | livree | annulee
+  montantTotal    Float
+  createdAt       DateTime    @default(now())
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  nom       String // nom du produit au moment de la commande
+  prix      Float // prix unitaire au moment de la commande
+  quantite  Int
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  url        String
+  createdAt  DateTime @default(now())
+}
+
+model User {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  nom        String
+  email      String   @unique
+  password   String // hash bcrypt
+  role       String   @default("admin") // admin | technicien
+  createdAt  DateTime @default(now())
+}
+
+model Client {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  nom        String
+  telephone  String
+  email      String?
+  createdAt  DateTime @default(now())
+
+  devices Device[]
+}
+
+model Device {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id])
+  marque     String
+  modele     String
+  imei       String?
+  createdAt  DateTime @default(now())
+
+  repairs Repair[]
+}
+
+model Repair {
+  id             String    @id @default(cuid())
+  boutiqueId     String
+  boutique       Boutique  @relation(fields: [boutiqueId], references: [id])
+  deviceId       String
+  device         Device    @relation(fields: [deviceId], references: [id])
+  probleme       String
+  statut         String    @default("en_attente") // en_attente | en_cours | termine
+  prix           Float     @default(0)
+  coutPieces     Float     @default(0)
+  garantieMois   Int       @default(3)
+  technicien     String?
+  dateDepot      DateTime  @default(now())
+  dateTerminee   DateTime?
+
+  invoice Invoice?
+}
+
+model StockItem {
+  id           String   @id @default(cuid())
+  boutiqueId   String
+  boutique     Boutique @relation(fields: [boutiqueId], references: [id])
+  nom          String
+  quantite     Int      @default(0)
+  seuilAlerte  Int      @default(3)
+  prixAchat    Float    @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Invoice {
+  id         String   @id @default(cuid())
+  boutiqueId String
+  boutique   Boutique @relation(fields: [boutiqueId], references: [id])
+  repairId   String   @unique
+  repair     Repair   @relation(fields: [repairId], references: [id])
+  numero     String   @unique
+  montant    Float
+  createdAt  DateTime @default(now())
+}
