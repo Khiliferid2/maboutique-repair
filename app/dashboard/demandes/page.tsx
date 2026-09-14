@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import QrCodeButton from "@/components/QrCodeButton";
 
 type Devis = { id: string; total: number; statut: string };
 type Demande = {
@@ -101,6 +102,12 @@ export default function DemandesPage() {
                   <p className="text-xs text-inkSoft mt-1">
                     {d.clientNom} · {d.clientTelephone}
                   </p>
+                  <div className="mt-2">
+                    <QrCodeButton
+                      url={`${typeof window !== "undefined" ? window.location.origin : ""}/suivi/${d.id}`}
+                      label="QR suivi client"
+                    />
+                  </div>
                 </div>
                 {d.statut === "nouvelle" || d.statut === "devis_envoye" ? (
                   <button

@@ -33,6 +33,13 @@ model Boutique {
   horaires    String? // texte libre, ex: "Lun-Sam 9h-18h"
   publie      Boolean  @default(false) // profil visible dans la recherche une fois complété
 
+  // --- Localisation tunisienne précise ---
+  gouvernorat String?
+  delegation  String?
+
+  // --- Confiance ---
+  verified    Boolean  @default(false) // badge "Atelier vérifié", activé par un admin
+
   users    User[]
   clients  Client[]
   devices  Device[]

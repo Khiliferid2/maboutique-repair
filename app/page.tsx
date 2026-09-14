@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen">
       {/* NAV */}
-      <header className="sticky top-0 z-50 bg-paper/90 backdrop-blur border-b border-line">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-line">
         <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 font-display font-bold text-navy">
             <Logo size={32} />

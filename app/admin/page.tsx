@@ -10,6 +10,7 @@ type Boutique = {
   telephone: string | null;
   plan: string;
   publie: boolean;
+  verified: boolean;
   createdAt: string;
   users: { email: string; nom: string }[];
   _count: { repairs: number; clients: number; services: number };
@@ -57,6 +58,15 @@ export default function AdminPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ publie: !publie }),
+    });
+    load();
+  }
+
+  async function toggleVerified(id: string, verified: boolean) {
+    await fetch(`/api/admin/boutiques/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verified: !verified }),
     });
     load();
   }
@@ -138,6 +148,7 @@ export default function AdminPage() {
                   <th className="py-3 px-4">Clients</th>
                   <th className="py-3 px-4">Réparations</th>
                   <th className="py-3 px-4">Visible</th>
+                  <th className="py-3 px-4">Vérifié</th>
                   <th className="py-3 px-4">Plan</th>
                 </tr>
               </thead>
@@ -162,6 +173,16 @@ export default function AdminPage() {
                       </button>
                     </td>
                     <td className="py-3 px-4">
+                      <button
+                        onClick={() => toggleVerified(b.id, b.verified)}
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          b.verified ? "bg-green text-white" : "bg-line text-inkSoft"
+                        }`}
+                      >
+                        {b.verified ? "✅ Vérifié" : "Non vérifié"}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4">
                       <select
                         value={b.plan}
                         onChange={(e) => updatePlan(b.id, e.target.value)}
@@ -176,7 +197,7 @@ export default function AdminPage() {
                 ))}
                 {boutiques?.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-6 px-4 text-center text-inkSoft">
+                    <td colSpan={8} className="py-6 px-4 text-center text-inkSoft">
                       Aucune boutique inscrite pour le moment.
                     </td>
                   </tr>

@@ -11,7 +11,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
-  const { plan, publie } = await req.json();
+  const { plan, publie, verified } = await req.json();
   const data: Record<string, unknown> = {};
 
   if (plan) {
@@ -22,6 +22,9 @@ export async function PATCH(
   }
   if (typeof publie === "boolean") {
     data.publie = publie;
+  }
+  if (typeof verified === "boolean") {
+    data.verified = verified;
   }
 
   const boutique = await prisma.boutique.update({

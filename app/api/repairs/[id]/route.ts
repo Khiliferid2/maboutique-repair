@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { sendEmail, repairReadyEmailHtml, repairReadyWhatsAppLink } from "@/lib/email";
 
 export async function PATCH(
   req: NextRequest,
@@ -17,6 +18,10 @@ export async function PATCH(
 
   const repair = await prisma.repair.findFirst({
     where: { id: params.id, boutiqueId: session.boutiqueId },
+    include: {
+      device: { include: { client: true } },
+      boutique: true,
+    },
   });
   if (!repair) {
     return NextResponse.json(
@@ -34,6 +39,7 @@ export async function PATCH(
   });
 
   // Génère automatiquement une facture à la clôture de la réparation
+  let whatsappLink: string | null = null;
   if (statut === "termine") {
     const existingInvoice = await prisma.invoice.findUnique({
       where: { repairId: repair.id },
@@ -52,7 +58,33 @@ export async function PATCH(
         },
       });
     }
+
+    // Notifie le client : email automatique (si adresse connue) +
+    // lien WhatsApp pré-rempli pour un envoi en un clic depuis le dashboard.
+    const appareil = `${repair.device.marque} ${repair.device.modele}`;
+    if (repair.device.client.email) {
+      await sendEmail({
+        to: repair.device.client.email,
+        subject: "Votre appareil est prêt ✅",
+        html: repairReadyEmailHtml({
+          boutiqueNom: repair.boutique.nom,
+          clientNom: repair.device.client.nom,
+          appareil,
+          prix: repair.prix,
+          boutiqueTelephone: repair.boutique.telephone,
+        }),
+      });
+    }
+    if (repair.device.client.telephone) {
+      whatsappLink = repairReadyWhatsAppLink({
+        clientTelephone: repair.device.client.telephone,
+        clientNom: repair.device.client.nom,
+        boutiqueNom: repair.boutique.nom,
+        appareil,
+        prix: repair.prix,
+      });
+    }
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, whatsappLink });
 }

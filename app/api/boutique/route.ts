@@ -19,6 +19,8 @@ const EDITABLE_FIELDS = [
   "nom",
   "description",
   "ville",
+  "gouvernorat",
+  "delegation",
   "adresse",
   "telephone",
   "whatsapp",

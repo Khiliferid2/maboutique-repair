@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import ReviewSection from "./ReviewSection";
+import QrCodeButton from "@/components/QrCodeButton";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://maboutique-repair.vercel.app");
 
 export async function generateMetadata({
   params,
@@ -61,9 +66,19 @@ export default async function BoutiquePublicPage({
         <div className="bg-white border border-line rounded-card p-8 mb-6">
           <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
             <div>
-              <h1 className="font-display text-2xl text-navy mb-1">{boutique.nom}</h1>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h1 className="font-display text-2xl text-navy">{boutique.nom}</h1>
+                {boutique.verified && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green text-white">
+                    ✅ Atelier vérifié
+                  </span>
+                )}
+              </div>
               <p className="text-inkSoft text-sm">
-                📍 {boutique.adresse || boutique.ville || "Tunisie"}
+                📍 {boutique.adresse ||
+                  (boutique.delegation ? `${boutique.delegation}, ${boutique.gouvernorat}` : boutique.gouvernorat) ||
+                  boutique.ville ||
+                  "Tunisie"}
               </p>
               {avgNote !== null && (
                 <p className="text-sm mt-1">
@@ -119,6 +134,10 @@ export default async function BoutiquePublicPage({
                 📍 Itinéraire
               </a>
             )}
+            <QrCodeButton
+              url={`${SITE_URL}/boutique/${boutique.id}`}
+              label="Partager (QR)"
+            />
           </div>
 
           {boutique.horaires && (

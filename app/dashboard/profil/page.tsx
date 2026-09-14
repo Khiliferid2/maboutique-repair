@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SERVICES_CATALOGUE, PRODUCT_CATEGORIES } from "@/lib/services-catalog";
+import { GOUVERNORATS, TUNISIA_LOCATIONS } from "@/lib/tunisia-locations";
 
 type Service = { id: string; nom: string };
 type Product = {
@@ -16,6 +17,8 @@ type Boutique = {
   nom: string;
   description: string | null;
   ville: string | null;
+  gouvernorat: string | null;
+  delegation: string | null;
   adresse: string | null;
   telephone: string | null;
   whatsapp: string | null;
@@ -47,6 +50,8 @@ export default function ProfilPage() {
       nom: data.nom || "",
       description: data.description || "",
       ville: data.ville || "",
+      gouvernorat: data.gouvernorat || "",
+      delegation: data.delegation || "",
       adresse: data.adresse || "",
       telephone: data.telephone || "",
       whatsapp: data.whatsapp || "",
@@ -186,6 +191,39 @@ export default function ProfilPage() {
               placeholder="Ex: Ben Arous"
               className="w-full border border-line rounded-lg px-4 py-2.5 text-sm bg-paper"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Gouvernorat</label>
+            <select
+              value={form.gouvernorat || ""}
+              onChange={(e) =>
+                setForm({ ...form, gouvernorat: e.target.value, delegation: "" })
+              }
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm bg-paper"
+            >
+              <option value="">— Sélectionner —</option>
+              {GOUVERNORATS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Délégation</label>
+            <select
+              value={form.delegation || ""}
+              onChange={(e) => setForm({ ...form, delegation: e.target.value })}
+              disabled={!form.gouvernorat}
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm bg-paper disabled:opacity-50"
+            >
+              <option value="">— Sélectionner —</option>
+              {(TUNISIA_LOCATIONS[form.gouvernorat] || []).map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -68,3 +68,54 @@ export function newOrderEmailHtml(params: {
     </div>
   `;
 }
+
+// --- Notification "réparation prête" ---
+//
+// L'envoi automatique de WhatsApp nécessite une API WhatsApp Business
+// (payante, ex: Twilio, Meta Cloud API) qui n'est pas configurée par
+// défaut. En attendant, on couvre deux canaux :
+//  1. Email automatique au client (si son email est connu et Resend est
+//     configuré) via sendEmail + repairReadyEmailHtml ci-dessous.
+//  2. Un lien WhatsApp "clic-pour-envoyer" (wa.me) pré-rempli, que le
+//     réparateur peut envoyer en un clic depuis le tableau de bord.
+
+export function repairReadyEmailHtml(params: {
+  boutiqueNom: string;
+  clientNom: string;
+  appareil: string;
+  prix: number;
+  boutiqueTelephone?: string | null;
+}): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+      <h2 style="color: #0F1F45;">✅ Votre appareil est prêt !</h2>
+      <p>Bonjour ${params.clientNom},</p>
+      <p>Bonne nouvelle : votre <b>${params.appareil}</b> a été réparé chez <b>${params.boutiqueNom}</b> et est prêt à être récupéré.</p>
+      <p>Montant à régler : <b>${params.prix.toFixed(0)} DT</b></p>
+      ${
+        params.boutiqueTelephone
+          ? `<p>Pour toute question, contactez-nous au ${params.boutiqueTelephone}.</p>`
+          : ""
+      }
+      <p style="color: #6B7280; font-size: 12px;">MaBoutique Repair</p>
+    </div>
+  `;
+}
+
+export function repairReadyWhatsAppLink(params: {
+  clientTelephone: string;
+  clientNom: string;
+  boutiqueNom: string;
+  appareil: string;
+  prix: number;
+}): string {
+  const message =
+    `Bonjour ${params.clientNom}, votre ${params.appareil} est prêt ` +
+    `chez ${params.boutiqueNom} ! Montant à régler : ${params.prix.toFixed(0)} DT. ` +
+    `Vous pouvez venir le récupérer dès que possible. Merci 🙏`;
+
+  // wa.me attend un numéro international sans "+", "00" ni espaces.
+  const phone = params.clientTelephone.replace(/[^0-9]/g, "").replace(/^00/, "");
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}

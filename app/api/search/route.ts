@@ -6,6 +6,8 @@ import { PLAN_RANK } from "@/lib/services-catalog";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const service = searchParams.get("service")?.trim() || "";
+  const gouvernorat = searchParams.get("gouvernorat")?.trim() || "";
+  const delegation = searchParams.get("delegation")?.trim() || "";
   const lat = searchParams.get("lat") ? parseFloat(searchParams.get("lat")!) : null;
   const lng = searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null;
 
@@ -15,6 +17,8 @@ export async function GET(req: NextRequest) {
       ...(service
         ? { services: { some: { nom: { contains: service } } } }
         : {}),
+      ...(gouvernorat ? { gouvernorat } : {}),
+      ...(delegation ? { delegation } : {}),
     },
     include: { services: true, photos: true, reviews: true },
   });
@@ -32,11 +36,14 @@ export async function GET(req: NextRequest) {
       id: b.id,
       nom: b.nom,
       ville: b.ville,
+      gouvernorat: b.gouvernorat,
+      delegation: b.delegation,
       adresse: b.adresse,
       telephone: b.telephone,
       whatsapp: b.whatsapp,
       logoUrl: b.logoUrl,
       plan: b.plan,
+      verified: b.verified,
       horaires: b.horaires,
       services: b.services.map((s) => s.nom),
       distanceKm: dist,

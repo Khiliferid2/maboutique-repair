@@ -5,15 +5,19 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { SkeletonCard } from "@/components/Skeleton";
 import { SERVICES_CATALOGUE } from "@/lib/services-catalog";
+import { GOUVERNORATS, TUNISIA_LOCATIONS } from "@/lib/tunisia-locations";
 
 type Result = {
   id: string;
   nom: string;
   ville: string | null;
+  gouvernorat: string | null;
+  delegation: string | null;
   adresse: string | null;
   telephone: string | null;
   whatsapp: string | null;
   plan: string;
+  verified: boolean;
   horaires: string | null;
   services: string[];
   distanceKm: number | null;
@@ -34,6 +38,8 @@ const planLabel: Record<string, string> = {
 
 export default function RecherchePage() {
   const [service, setService] = useState("");
+  const [gouvernorat, setGouvernorat] = useState("");
+  const [delegation, setDelegation] = useState("");
   const [results, setResults] = useState<Result[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [locStatus, setLocStatus] = useState<"idle" | "loading" | "done" | "denied">("idle");
@@ -43,6 +49,8 @@ export default function RecherchePage() {
     setLoading(true);
     const params = new URLSearchParams();
     if (service) params.set("service", service);
+    if (gouvernorat) params.set("gouvernorat", gouvernorat);
+    if (delegation) params.set("delegation", delegation);
     if (lat != null && lng != null) {
       params.set("lat", String(lat));
       params.set("lng", String(lng));
@@ -105,11 +113,35 @@ export default function RecherchePage() {
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
-            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[200px]"
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[180px]"
           >
             <option value="">Tous les services</option>
             {SERVICES_CATALOGUE.map((s) => (
               <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={gouvernorat}
+            onChange={(e) => {
+              setGouvernorat(e.target.value);
+              setDelegation("");
+            }}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[160px]"
+          >
+            <option value="">Tous les gouvernorats</option>
+            {GOUVERNORATS.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+          <select
+            value={delegation}
+            onChange={(e) => setDelegation(e.target.value)}
+            disabled={!gouvernorat}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[160px] disabled:opacity-50"
+          >
+            <option value="">Toutes les délégations</option>
+            {(TUNISIA_LOCATIONS[gouvernorat] || []).map((d) => (
+              <option key={d} value={d}>{d}</option>
             ))}
           </select>
           <button
@@ -170,16 +202,21 @@ export default function RecherchePage() {
             >
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-display text-lg text-navy">{r.nom}</h3>
                     {planLabel[r.plan] && (
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${planBadge[r.plan]}`}>
                         {planLabel[r.plan]}
                       </span>
                     )}
+                    {r.verified && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green text-white flex items-center gap-1">
+                        ✅ Atelier vérifié
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-inkSoft mb-2">
-                    📍 {r.ville || "Tunisie"}
+                    📍 {r.delegation ? `${r.delegation}, ` : ""}{r.gouvernorat || r.ville || "Tunisie"}
                     {r.distanceKm != null && ` · ${r.distanceKm.toFixed(1)} km`}
                     {r.avgNote != null && (
                       <> · <span className="text-orange">★</span> {r.avgNote.toFixed(1)} ({r.avisCount})</>

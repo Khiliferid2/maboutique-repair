@@ -17,26 +17,43 @@ type Product = {
   boutique: { id: string; nom: string; ville: string | null; plan: string };
 };
 
+type BoutiqueOption = { id: string; nom: string; ville: string | null };
+
 export default function CataloguePage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [boutiques, setBoutiques] = useState<BoutiqueOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [categorie, setCategorie] = useState("");
+  const [boutiqueId, setBoutiqueId] = useState("");
   const [notice, setNotice] = useState("");
   const { addItem, totalItems } = useCart();
 
-  async function load() {
+  async function load(overrideBoutiqueId?: string) {
     setLoading(true);
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (categorie) params.set("categorie", categorie);
+    const bId = overrideBoutiqueId !== undefined ? overrideBoutiqueId : boutiqueId;
+    if (bId) params.set("boutiqueId", bId);
     const res = await fetch(`/api/catalogue?${params.toString()}`);
     setProducts(await res.json());
     setLoading(false);
   }
 
+  function filterByBoutique(id: string) {
+    setBoutiqueId(id);
+    load(id);
+  }
+
+  async function loadBoutiques() {
+    const res = await fetch("/api/catalogue/boutiques");
+    setBoutiques(await res.json());
+  }
+
   useEffect(() => {
     load();
+    loadBoutiques();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -57,6 +74,15 @@ export default function CataloguePage() {
       setNotice(`${p.nom} ajouté au panier ✓`);
     }
     setTimeout(() => setNotice(""), 3000);
+  }
+
+  const hasFilters = q || categorie || boutiqueId;
+
+  function resetFilters() {
+    setQ("");
+    setCategorie("");
+    setBoutiqueId("");
+    setTimeout(load, 0);
   }
 
   return (
@@ -113,12 +139,32 @@ export default function CataloguePage() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          <select
+            value={boutiqueId}
+            onChange={(e) => setBoutiqueId(e.target.value)}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white"
+          >
+            <option value="">Toutes les boutiques</option>
+            {boutiques.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.nom}{b.ville ? ` — ${b.ville}` : ""}
+              </option>
+            ))}
+          </select>
           <button
             onClick={load}
             className="bg-blue text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
           >
             🔍 Filtrer
           </button>
+          {hasFilters && (
+            <button
+              onClick={resetFilters}
+              className="text-sm font-semibold text-inkSoft px-3 py-2.5"
+            >
+              ✕ Réinitialiser
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -129,7 +175,7 @@ export default function CataloguePage() {
             <SkeletonProductCard />
           </div>
         ) : products.length === 0 ? (
-          <p className="text-sm text-inkSoft">Aucun produit disponible pour le moment.</p>
+          <p className="text-sm text-inkSoft">Aucun produit disponible pour ce filtre.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {products.map((p, idx) => (
@@ -138,13 +184,25 @@ export default function CataloguePage() {
                 style={{ animationDelay: `${idx * 30}ms` }}
                 className="animate-in bg-white border border-line rounded-card p-4 hover:shadow-md hover:-translate-y-0.5 transition"
               >
-                <div className="aspect-square bg-paper rounded-lg mb-3 flex items-center justify-center text-3xl">
-                  📦
+                <div className="aspect-square bg-paper rounded-lg mb-3 overflow-hidden flex items-center justify-center text-3xl">
+                  {p.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.photoUrl}
+                      alt={p.nom}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    "📦"
+                  )}
                 </div>
                 <h3 className="font-semibold text-navy text-sm mb-1">{p.nom}</h3>
-                <p className="text-xs text-inkSoft mb-2">
+                <button
+                  onClick={() => filterByBoutique(p.boutique.id)}
+                  className="text-xs text-inkSoft mb-2 hover:text-blue hover:underline block text-left"
+                >
                   {p.boutique.nom} · {p.boutique.ville || "Tunisie"}
-                </p>
+                </button>
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-navy">{p.prix.toFixed(0)} DT</span>
                   <button
