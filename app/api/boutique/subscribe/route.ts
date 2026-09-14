@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   if (plan !== "pro" && plan !== "premium") {
     return NextResponse.json({ error: "Plan invalide." }, { status: 400 });
   }
+  const planKey = plan as "pro" | "premium";
 
   if (!isKonnectConfigured()) {
     return NextResponse.json(
@@ -29,10 +30,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Boutique introuvable." }, { status: 404 });
   }
 
-  const montant = PLAN_PRICES[plan];
+  const montant = PLAN_PRICES[planKey];
 
   const payment = await prisma.subscriptionPayment.create({
-    data: { boutiqueId: boutique.id, plan, montant },
+    data: { boutiqueId: boutique.id, plan: planKey, montant },
   });
 
   const origin = req.nextUrl.origin;
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.subscriptionPayment.update({
     where: { id: payment.id },
-    data: { paiementRef },
+    data: { paiementRef: paymentRef },
   });
 
   return NextResponse.json({ payUrl });
