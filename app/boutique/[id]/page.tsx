@@ -40,7 +40,7 @@ export default async function BoutiquePublicPage({
 
   const avgNote =
     boutique.reviews.length > 0
-      ? boutique.reviews.reduce((s, r) => s + r.note, 0) / boutique.reviews.length
+      ? boutique.reviews.reduce((s: number, r: (typeof boutique.reviews)[number]) => s + r.note, 0) / boutique.reviews.length
       : null;
 
   const mapsUrl =
@@ -161,7 +161,7 @@ export default async function BoutiquePublicPage({
           <div className="bg-white border border-line rounded-card p-8 mb-6">
             <h2 className="font-display text-base text-navy mb-4">Services proposés</h2>
             <div className="flex flex-wrap gap-2">
-              {boutique.services.map((s) => (
+              {boutique.services.map((s: (typeof boutique.services)[number]) => (
                 <span
                   key={s.id}
                   className="text-sm bg-paper border border-line px-3 py-1.5 rounded-full text-navy"
@@ -177,7 +177,7 @@ export default async function BoutiquePublicPage({
           <div className="bg-white border border-line rounded-card p-8 mb-6">
             <h2 className="font-display text-base text-navy mb-4">Produits disponibles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {boutique.products.map((p) => (
+              {boutique.products.map((p: (typeof boutique.products)[number]) => (
                 <div
                   key={p.id}
                   className="flex items-center justify-between border border-line rounded-lg px-4 py-3 text-sm"
@@ -195,7 +195,7 @@ export default async function BoutiquePublicPage({
 
         <ReviewSection
           boutiqueId={boutique.id}
-          initialReviews={boutique.reviews.map((r) => ({
+          initialReviews={boutique.reviews.map((r: (typeof boutique.reviews)[number]) => ({
             id: r.id,
             nom: r.nom,
             note: r.note,

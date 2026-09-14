@@ -152,7 +152,7 @@ export default function CataloguePage() {
             ))}
           </select>
           <button
-            onClick={load}
+            onClick={() => load()}
             className="bg-blue text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
           >
             🔍 Filtrer

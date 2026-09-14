@@ -62,7 +62,7 @@ export default async function CommandeConfirmationPage({
           )}
 
           <div className="text-left border border-line rounded-lg p-4 mb-6">
-            {order.items.map((it) => (
+            {order.items.map((it: (typeof order.items)[number]) => (
               <div key={it.id} className="flex justify-between text-sm py-1.5">
                 <span>
                   {it.nom} <span className="text-inkSoft">× {it.quantite}</span>

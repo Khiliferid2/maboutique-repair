@@ -23,14 +23,14 @@ export async function GET(req: NextRequest) {
     include: { services: true, photos: true, reviews: true },
   });
 
-  const results = boutiques.map((b) => {
+  const results = boutiques.map((b: (typeof boutiques)[number]) => {
     const dist =
       lat != null && lng != null && b.latitude != null && b.longitude != null
         ? distanceKm(lat, lng, b.latitude, b.longitude)
         : null;
     const avgNote =
       b.reviews.length > 0
-        ? b.reviews.reduce((s, r) => s + r.note, 0) / b.reviews.length
+        ? b.reviews.reduce((s: number, r: (typeof b.reviews)[number]) => s + r.note, 0) / b.reviews.length
         : null;
     return {
       id: b.id,
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       plan: b.plan,
       verified: b.verified,
       horaires: b.horaires,
-      services: b.services.map((s) => s.nom),
+      services: b.services.map((s: (typeof b.services)[number]) => s.nom),
       distanceKm: dist,
       planRank: PLAN_RANK[b.plan] ?? 1,
       avgNote,
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
   // Tri : d'abord les plans les plus élevés (premium > pro > free),
   // puis par distance croissante si on a une position, sinon par nom.
-  results.sort((a, b) => {
+  results.sort((a: (typeof results)[number], b: (typeof results)[number]) => {
     if (b.planRank !== a.planRank) return b.planRank - a.planRank;
     if (a.distanceKm != null && b.distanceKm != null) {
       return a.distanceKm - b.distanceKm;

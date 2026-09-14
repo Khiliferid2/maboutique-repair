@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { id: true, createdAt: true },
   });
 
-  const boutiquePages: MetadataRoute.Sitemap = boutiques.map((b) => ({
+  const boutiquePages: MetadataRoute.Sitemap = boutiques.map((b: (typeof boutiques)[number]) => ({
     url: `${base}/boutique/${b.id}`,
     lastModified: b.createdAt,
     changeFrequency: "weekly",

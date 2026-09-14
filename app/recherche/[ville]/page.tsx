@@ -43,15 +43,16 @@ export default async function VillePage({ params }: { params: { ville: string } 
     include: { services: true, reviews: true },
   });
 
-  const results = boutiques
-    .map((b) => ({
+  const mapped = boutiques
+    .map((b: (typeof boutiques)[number]) => ({
       ...b,
       avgNote:
         b.reviews.length > 0
-          ? b.reviews.reduce((s, r) => s + r.note, 0) / b.reviews.length
+          ? b.reviews.reduce((s: number, r: (typeof b.reviews)[number]) => s + r.note, 0) / b.reviews.length
           : null,
-    }))
-    .sort((a, b) => (b.plan === "premium" ? 1 : 0) - (a.plan === "premium" ? 1 : 0));
+    }));
+  const results = mapped
+    .sort((a: (typeof mapped)[number], b: (typeof mapped)[number]) => (b.plan === "premium" ? 1 : 0) - (a.plan === "premium" ? 1 : 0));
 
   return (
     <main className="min-h-screen bg-paper">
@@ -88,7 +89,7 @@ export default async function VillePage({ params }: { params: { ville: string } 
           </div>
         ) : (
           <div className="space-y-4">
-            {results.map((r) => (
+            {results.map((r: (typeof results)[number]) => (
               <Link
                 key={r.id}
                 href={`/boutique/${r.id}`}
@@ -109,7 +110,7 @@ export default async function VillePage({ params }: { params: { ville: string } 
                   )}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {r.services.slice(0, 5).map((s) => (
+                  {r.services.slice(0, 5).map((s: (typeof r.services)[number]) => (
                     <span key={s.id} className="text-[11px] bg-paper border border-line px-2 py-1 rounded-full text-inkSoft">
                       {s.nom}
                     </span>

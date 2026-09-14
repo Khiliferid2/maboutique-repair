@@ -88,7 +88,7 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {repairs.map((r) => (
+              {repairs.map((r: (typeof repairs)[number]) => (
                 <tr key={r.id} className="border-b border-line last:border-0">
                   <td className="py-3">{r.device.client.nom}</td>
                   <td className="py-3">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { initKonnectPayment, isKonnectConfigured } from "@/lib/payment";
 import { sendEmail, newOrderEmailHtml } from "@/lib/email";
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     }[] = [];
 
     for (const item of items as { productId: string; quantite: number }[]) {
-      const product = products.find((p) => p.id === item.productId)!;
+      const product = products.find((p: (typeof products)[number]) => p.id === item.productId)!;
       if (item.quantite < 1) {
         return NextResponse.json({ error: "Quantité invalide." }, { status: 400 });
       }
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
     const numero = `CMD-${String(count + 1).padStart(4, "0")}`;
 
     // Crée la commande + décrémente le stock, dans une même transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.order.create({
         data: {
           boutiqueId,
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
 
       await prisma.order.update({
         where: { id: order.id },
-        data: { paiementRef },
+        data: { paiementRef: paymentRef },
       });
 
       return NextResponse.json({ orderId: order.id, payUrl });

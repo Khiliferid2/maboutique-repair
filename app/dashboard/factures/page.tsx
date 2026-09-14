@@ -38,7 +38,7 @@ export default async function FacturesPage() {
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv) => (
+              {invoices.map((inv: (typeof invoices)[number]) => (
                 <tr key={inv.id} className="border-b border-line last:border-0">
                   <td className="py-3 px-5 font-mono font-semibold text-navy">
                     {inv.numero}
