@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
+import { LanguageProvider } from "@/lib/language-context";
 
 export const metadata: Metadata = {
   title: "MaBoutique Repair — Trouvez un réparateur près de chez vous en Tunisie",
@@ -30,7 +31,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="font-sans">
-        <CartProvider>{children}</CartProvider>
+        <LanguageProvider>
+          <CartProvider>{children}</CartProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import CircuitBackground from "@/components/CircuitBackground";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/lib/language-context";
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
   return (
     <main className="min-h-screen">
       {/* NAV */}
@@ -22,26 +28,27 @@ export default function HomePage() {
               href="/catalogue"
               className="px-2 sm:px-4 py-2 font-semibold text-navy whitespace-nowrap"
             >
-              🛒 Boutique en ligne
+              🛒 {t("nav.shop")}
             </Link>
             <Link
               href="/recherche"
               className="px-2 sm:px-4 py-2 font-semibold text-navy whitespace-nowrap"
             >
-              🔍 Trouver un réparateur
+              🔍 {t("nav.find")}
             </Link>
             <Link
               href="/login"
               className="px-3 sm:px-4 py-2 rounded-full border border-line font-semibold text-navy whitespace-nowrap"
             >
-              Connexion
+              {t("nav.login")}
             </Link>
             <Link
               href="/register"
               className="px-3 sm:px-4 py-2 rounded-full bg-blue text-white font-semibold whitespace-nowrap"
             >
-              S'inscrire
+              {t("nav.register")}
             </Link>
+            <LanguageSwitcher />
           </div>
         </nav>
       </header>
@@ -52,32 +59,28 @@ export default function HomePage() {
           <CircuitBackground />
           <div className="relative max-w-xl">
             <h1 className="font-display text-3xl md:text-5xl leading-tight mb-5">
-              Réparez, gérez et développez votre activité avec{" "}
-              <span className="text-orange">MaBoutique Repair</span>
+              {t("hero.title1")} {t("hero.title2")}{" "}
+              <span className="text-orange">{t("hero.title3")}</span>
             </h1>
-            <p className="text-white/75 mb-8">
-              Le logiciel n°1 en Tunisie pour la gestion des ateliers de
-              réparation smartphones et électronique : clients, appareils,
-              IMEI, réparations, garanties, stock et factures.
-            </p>
+            <p className="text-white/75 mb-8">{t("hero.lead")}</p>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/register"
                 className="px-6 py-3 rounded-xl bg-orange text-navy font-bold"
               >
-                Commencer gratuitement
+                {t("hero.cta.start")}
               </Link>
               <Link
                 href="/login"
                 className="px-6 py-3 rounded-xl border border-white/40 font-semibold"
               >
-                J'ai déjà un compte
+                {t("hero.cta.demo")}
               </Link>
             </div>
             <p className="text-white/60 text-sm mt-5">
-              Vous êtes un client ?{" "}
+              {t("hero.client.line")}{" "}
               <Link href="/recherche" className="text-orange font-semibold underline">
-                Trouver un réparateur près de chez vous →
+                {t("hero.client.link")}
               </Link>
             </p>
           </div>
@@ -86,29 +89,27 @@ export default function HomePage() {
 
       {/* FEATURES */}
       <section className="max-w-6xl mx-auto px-6 py-10">
-        <h2 className="font-display text-2xl text-navy mb-8">
-          Tout l'atelier, un seul outil
-        </h2>
+        <h2 className="font-display text-2xl text-navy mb-8">{t("features.title")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
           {[
-            ["📱", "Clients & appareils", "Historique complet, IMEI enregistré."],
-            ["🔧", "Réparations & garantie", "Suivi de statut en temps réel."],
-            ["📦", "Stock & pièces", "Alertes de rupture automatiques."],
-            ["🧾", "Factures", "Générées automatiquement."],
-            ["📊", "Tableau de bord", "Chiffre d'affaires en un coup d'œil."],
-            ["🏪", "Multi-boutiques", "Plusieurs points de vente, un compte."],
-          ].map(([icon, title, desc]) => (
+            ["📱", "features.clients.title", "features.clients.desc"],
+            ["🔧", "features.repairs.title", "features.repairs.desc"],
+            ["📦", "features.stock.title", "features.stock.desc"],
+            ["🧾", "features.invoices.title", "features.invoices.desc"],
+            ["📊", "features.dashboard.title", "features.dashboard.desc"],
+            ["🏪", "features.multi.title", "features.multi.desc"],
+          ].map(([icon, titleKey, descKey]) => (
             <div
-              key={title}
+              key={titleKey}
               className="bg-white border border-line rounded-card p-6"
             >
               <div className="w-10 h-10 rounded-lg bg-navy text-orange flex items-center justify-center text-lg mb-4">
                 {icon}
               </div>
               <h3 className="font-display text-base text-navy mb-1">
-                {title}
+                {t(titleKey)}
               </h3>
-              <p className="text-sm text-inkSoft">{desc}</p>
+              <p className="text-sm text-inkSoft">{t(descKey)}</p>
             </div>
           ))}
         </div>
@@ -119,17 +120,13 @@ export default function HomePage() {
         <div className="rounded-3xl bg-navy text-white px-10 py-14 text-center relative overflow-hidden">
           <CircuitBackground />
           <div className="relative">
-            <h2 className="font-display text-2xl md:text-3xl mb-3">
-              Prêt à organiser votre atelier ?
-            </h2>
-            <p className="text-white/70 mb-7">
-              Créez votre boutique en 2 minutes. Aucune carte bancaire requise.
-            </p>
+            <h2 className="font-display text-2xl md:text-3xl mb-3">{t("cta.title")}</h2>
+            <p className="text-white/70 mb-7">{t("cta.desc")}</p>
             <Link
               href="/register"
               className="inline-block px-7 py-3 rounded-xl bg-orange text-navy font-bold"
             >
-              Créer ma boutique
+              {t("cta.button")}
             </Link>
           </div>
         </div>
@@ -139,38 +136,38 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8 text-sm">
             <div>
-              <h4 className="text-white font-semibold mb-3">Plateforme</h4>
+              <h4 className="text-white font-semibold mb-3">{t("footer.platform")}</h4>
               <div className="space-y-2">
-                <Link href="/comment-ca-marche" className="block hover:text-white">Comment ça marche</Link>
-                <Link href="/faq" className="block hover:text-white">FAQ</Link>
-                <Link href="/devenir-partenaire" className="block hover:text-white">Devenir partenaire</Link>
+                <Link href="/comment-ca-marche" className="block hover:text-white">{t("footer.howitworks")}</Link>
+                <Link href="/faq" className="block hover:text-white">{t("footer.faq")}</Link>
+                <Link href="/devenir-partenaire" className="block hover:text-white">{t("footer.partner")}</Link>
               </div>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">Clients</h4>
+              <h4 className="text-white font-semibold mb-3">{t("footer.clients")}</h4>
               <div className="space-y-2">
-                <Link href="/recherche" className="block hover:text-white">Trouver un réparateur</Link>
-                <Link href="/catalogue" className="block hover:text-white">Boutique en ligne</Link>
+                <Link href="/recherche" className="block hover:text-white">{t("footer.findrepairer")}</Link>
+                <Link href="/catalogue" className="block hover:text-white">{t("footer.onlineshop")}</Link>
               </div>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">Villes populaires</h4>
+              <h4 className="text-white font-semibold mb-3">{t("footer.cities")}</h4>
               <div className="space-y-2">
-                <Link href="/recherche/tunis" className="block hover:text-white">Réparateur à Tunis</Link>
-                <Link href="/recherche/sfax" className="block hover:text-white">Réparateur à Sfax</Link>
-                <Link href="/recherche/sousse" className="block hover:text-white">Réparateur à Sousse</Link>
+                <Link href="/recherche/tunis" className="block hover:text-white">{t("footer.city.tunis")}</Link>
+                <Link href="/recherche/sfax" className="block hover:text-white">{t("footer.city.sfax")}</Link>
+                <Link href="/recherche/sousse" className="block hover:text-white">{t("footer.city.sousse")}</Link>
               </div>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">Ateliers</h4>
+              <h4 className="text-white font-semibold mb-3">{t("footer.workshops")}</h4>
               <div className="space-y-2">
-                <Link href="/register" className="block hover:text-white">Créer ma boutique</Link>
-                <Link href="/login" className="block hover:text-white">Connexion</Link>
+                <Link href="/register" className="block hover:text-white">{t("footer.createshop")}</Link>
+                <Link href="/login" className="block hover:text-white">{t("footer.login")}</Link>
               </div>
             </div>
           </div>
           <div className="border-t border-white/10 pt-6 text-center text-sm">
-            « Réparez aujourd'hui, grandissez demain ! » — 📍 Tunisie
+            {t("footer.tagline")} — 📍 {t("footer.location")}
           </div>
         </div>
       </footer>
