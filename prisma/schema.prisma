@@ -136,7 +136,7 @@ model Order {
   id              String      @id @default(cuid())
   boutiqueId      String
   boutique        Boutique    @relation(fields: [boutiqueId], references: [id])
-  numero          String      @unique
+  numero          String
   clientNom       String
   clientTelephone String
   clientAdresse   String
@@ -149,6 +149,10 @@ model Order {
   createdAt       DateTime    @default(now())
 
   items OrderItem[]
+
+  // Le numéro (CMD-0001...) est généré par boutique, donc l'unicité doit
+  // l'être aussi — @unique seul provoquait une collision dès la 2e boutique.
+  @@unique([boutiqueId, numero])
 }
 
 model OrderItem {
@@ -242,7 +246,10 @@ model Invoice {
   boutique   Boutique @relation(fields: [boutiqueId], references: [id])
   repairId   String   @unique
   repair     Repair   @relation(fields: [repairId], references: [id])
-  numero     String   @unique
+  numero     String
   montant    Float
   createdAt  DateTime @default(now())
+
+  // Même correctif que sur Order.numero : unique par boutique, pas globalement.
+  @@unique([boutiqueId, numero])
 }
