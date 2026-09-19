@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { SkeletonCard } from "@/components/Skeleton";
-import { SERVICES_CATALOGUE } from "@/lib/services-catalog";
+import { SERVICES_CATALOGUE, MARQUES } from "@/lib/services-catalog";
 import { GOUVERNORATS, TUNISIA_LOCATIONS } from "@/lib/tunisia-locations";
+import { useLanguage } from "@/lib/language-context";
 
 type Result = {
   id: string;
@@ -20,6 +21,7 @@ type Result = {
   verified: boolean;
   horaires: string | null;
   services: string[];
+  logoUrl?: string | null;
   distanceKm: number | null;
   avgNote: number | null;
   avisCount: number;
@@ -37,9 +39,13 @@ const planLabel: Record<string, string> = {
 };
 
 export default function RecherchePage() {
+  const { t } = useLanguage();
+  const [q, setQ] = useState("");
   const [service, setService] = useState("");
   const [gouvernorat, setGouvernorat] = useState("");
   const [delegation, setDelegation] = useState("");
+  const [marque, setMarque] = useState("");
+  const [minNote, setMinNote] = useState("");
   const [results, setResults] = useState<Result[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [locStatus, setLocStatus] = useState<"idle" | "loading" | "done" | "denied">("idle");
@@ -48,9 +54,12 @@ export default function RecherchePage() {
   async function runSearch(lat?: number, lng?: number) {
     setLoading(true);
     const params = new URLSearchParams();
+    if (q) params.set("q", q);
     if (service) params.set("service", service);
     if (gouvernorat) params.set("gouvernorat", gouvernorat);
     if (delegation) params.set("delegation", delegation);
+    if (marque) params.set("marque", marque);
+    if (minNote) params.set("minNote", minNote);
     if (lat != null && lng != null) {
       params.set("lat", String(lat));
       params.set("lng", String(lng));
@@ -96,28 +105,40 @@ export default function RecherchePage() {
             MaBoutique Repair
           </Link>
           <Link href="/register" className="text-sm font-semibold text-blue">
-            Ajouter ma boutique
+            {t("search.addShop")}
           </Link>
         </div>
       </header>
 
       <section className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="font-display text-2xl text-navy mb-2">
-          Trouver un réparateur près de chez vous
-        </h1>
-        <p className="text-inkSoft mb-6">
-          Réparation smartphones, PC, tablettes et consoles — dans toute la Tunisie.
-        </p>
+        <h1 className="font-display text-2xl text-navy mb-2">{t("search.title")}</h1>
+        <p className="text-inkSoft mb-6">{t("search.subtitle")}</p>
 
         <form onSubmit={handleTextSearch} className="flex flex-wrap gap-3 mb-4">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("search.placeholder")}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-[2] min-w-[240px]"
+          />
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[180px]"
           >
-            <option value="">Tous les services</option>
+            <option value="">{t("search.allServices")}</option>
             {SERVICES_CATALOGUE.map((s) => (
               <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={marque}
+            onChange={(e) => setMarque(e.target.value)}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[150px]"
+          >
+            <option value="">{t("search.allBrands")}</option>
+            {MARQUES.map((m) => (
+              <option key={m} value={m}>{m}</option>
             ))}
           </select>
           <select
@@ -128,7 +149,7 @@ export default function RecherchePage() {
             }}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[160px]"
           >
-            <option value="">Tous les gouvernorats</option>
+            <option value="">{t("search.allGouvernorats")}</option>
             {GOUVERNORATS.map((g) => (
               <option key={g} value={g}>{g}</option>
             ))}
@@ -139,44 +160,48 @@ export default function RecherchePage() {
             disabled={!gouvernorat}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[160px] disabled:opacity-50"
           >
-            <option value="">Toutes les délégations</option>
+            <option value="">{t("search.allDelegations")}</option>
             {(TUNISIA_LOCATIONS[gouvernorat] || []).map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
+          </select>
+          <select
+            value={minNote}
+            onChange={(e) => setMinNote(e.target.value)}
+            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[140px]"
+          >
+            <option value="">{t("search.minRating")}</option>
+            <option value="4">★ 4+</option>
+            <option value="3">★ 3+</option>
+            <option value="2">★ 2+</option>
           </select>
           <button
             type="submit"
             className="bg-blue text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
           >
-            🔍 Rechercher
+            🔍 {t("search.button")}
           </button>
           <button
             type="button"
             onClick={findNearMe}
             className="bg-navy text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
           >
-            📍 Près de moi
+            📍 {t("search.nearMe")}
           </button>
         </form>
 
         {locStatus === "loading" && (
-          <p className="text-xs text-inkSoft mb-4">Localisation en cours...</p>
+          <p className="text-xs text-inkSoft mb-4">{t("search.locating")}</p>
         )}
         {locStatus === "denied" && (
-          <p className="text-xs text-red mb-4">
-            Localisation refusée — résultats non triés par distance.
-          </p>
+          <p className="text-xs text-red mb-4">{t("search.locationDenied")}</p>
         )}
         {locStatus === "done" && (
-          <p className="text-xs text-green mb-4">
-            📍 Résultats triés par distance depuis votre position.
-          </p>
+          <p className="text-xs text-green mb-4">📍 {t("search.locationDone")}</p>
         )}
 
         {results === null && !loading && (
-          <p className="text-sm text-inkSoft">
-            Lancez une recherche pour voir les ateliers disponibles.
-          </p>
+          <p className="text-sm text-inkSoft">{t("search.prompt")}</p>
         )}
         {loading && (
           <div className="space-y-4">
@@ -187,9 +212,7 @@ export default function RecherchePage() {
         )}
 
         {results && results.length === 0 && (
-          <p className="text-sm text-inkSoft">
-            Aucun atelier trouvé pour ce critère pour le moment.
-          </p>
+          <p className="text-sm text-inkSoft">{t("search.noResults")}</p>
         )}
 
         <div className="space-y-4">
@@ -201,36 +224,43 @@ export default function RecherchePage() {
               className="animate-in block bg-white border border-line rounded-card p-5 hover:border-blue hover:shadow-md transition"
             >
               <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-display text-lg text-navy">{r.nom}</h3>
-                    {planLabel[r.plan] && (
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${planBadge[r.plan]}`}>
-                        {planLabel[r.plan]}
-                      </span>
-                    )}
-                    {r.verified && (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green text-white flex items-center gap-1">
-                        ✅ Atelier vérifié
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-inkSoft mb-2">
-                    📍 {r.delegation ? `${r.delegation}, ` : ""}{r.gouvernorat || r.ville || "Tunisie"}
-                    {r.distanceKm != null && ` · ${r.distanceKm.toFixed(1)} km`}
-                    {r.avgNote != null && (
-                      <> · <span className="text-orange">★</span> {r.avgNote.toFixed(1)} ({r.avisCount})</>
-                    )}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {r.services.slice(0, 5).map((s) => (
-                      <span
-                        key={s}
-                        className="text-[11px] bg-paper border border-line px-2 py-1 rounded-full text-inkSoft"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                <div className="flex items-start gap-4">
+                  {r.logoUrl ? (
+                    <img src={r.logoUrl} alt="" className="w-14 h-14 rounded-xl object-cover border border-line shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-paper border border-line flex items-center justify-center text-xl shrink-0">🏪</div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-display text-lg text-navy">{r.nom}</h3>
+                      {planLabel[r.plan] && (
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${planBadge[r.plan]}`}>
+                          {planLabel[r.plan]}
+                        </span>
+                      )}
+                      {r.verified && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green text-white flex items-center gap-1">
+                          ✅ {t("search.verified")}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-inkSoft mb-2">
+                      📍 {r.delegation ? `${r.delegation}, ` : ""}{r.gouvernorat || r.ville || "Tunisie"}
+                      {r.distanceKm != null && ` · ${r.distanceKm.toFixed(1)} km`}
+                      {r.avgNote != null && (
+                        <> · <span className="text-orange">★</span> {r.avgNote.toFixed(1)} ({r.avisCount})</>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.services.slice(0, 5).map((s) => (
+                        <span
+                          key={s}
+                          className="text-[11px] bg-paper border border-line px-2 py-1 rounded-full text-inkSoft"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 shrink-0">
@@ -238,7 +268,7 @@ export default function RecherchePage() {
                     <span className="text-xs font-semibold text-navy">📞 {r.telephone}</span>
                   )}
                   {r.whatsapp && (
-                    <span className="text-xs font-semibold text-green">💬 WhatsApp</span>
+                    <span className="text-xs font-semibold text-green">💬 {t("search.whatsapp")}</span>
                   )}
                 </div>
               </div>

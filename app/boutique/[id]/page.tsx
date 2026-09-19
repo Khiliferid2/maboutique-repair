@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import ReviewSection from "./ReviewSection";
-import QrCodeButton from "@/components/QrCodeButton";
+import ShopProfileBody from "./ShopProfileBody";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -33,7 +31,7 @@ export default async function BoutiquePublicPage({
 }) {
   const boutique = await prisma.boutique.findFirst({
     where: { id: params.id, publie: true },
-    include: { services: true, products: true, reviews: true },
+    include: { services: true, products: true, reviews: true, photos: true, videos: true },
   });
 
   if (!boutique) notFound();
@@ -53,157 +51,48 @@ export default async function BoutiquePublicPage({
     : null;
 
   return (
-    <main className="min-h-screen bg-paper">
-      <header className="bg-white border-b border-line">
-        <div className="max-w-3xl mx-auto px-6 py-4">
-          <Link href="/recherche" className="text-sm font-semibold text-blue">
-            ← Retour à la recherche
-          </Link>
-        </div>
-      </header>
-
-      <section className="max-w-3xl mx-auto px-6 py-10">
-        <div className="bg-white border border-line rounded-card p-8 mb-6">
-          <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="font-display text-2xl text-navy">{boutique.nom}</h1>
-                {boutique.verified && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green text-white">
-                    ✅ Atelier vérifié
-                  </span>
-                )}
-              </div>
-              <p className="text-inkSoft text-sm">
-                📍 {boutique.adresse ||
-                  (boutique.delegation ? `${boutique.delegation}, ${boutique.gouvernorat}` : boutique.gouvernorat) ||
-                  boutique.ville ||
-                  "Tunisie"}
-              </p>
-              {avgNote !== null && (
-                <p className="text-sm mt-1">
-                  <span className="text-orange">{"★".repeat(Math.round(avgNote))}</span>
-                  <span className="text-line">{"★".repeat(5 - Math.round(avgNote))}</span>{" "}
-                  <span className="text-inkSoft">
-                    {avgNote.toFixed(1)} / 5 ({boutique.reviews.length} avis)
-                  </span>
-                </p>
-              )}
-            </div>
-            {boutique.plan !== "free" && (
-              <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-orange text-navy">
-                ⭐ {boutique.plan === "premium" ? "Premium" : "Pro"}
-              </span>
-            )}
-          </div>
-
-          {boutique.description && (
-            <p className="text-sm text-inkSoft mb-6">{boutique.description}</p>
-          )}
-
-          <div className="flex flex-wrap gap-3 mb-6">
-            <Link
-              href={`/boutique/${boutique.id}/demande`}
-              className="bg-orange text-navy text-sm font-bold px-5 py-2.5 rounded-lg"
-            >
-              🔧 Demander une réparation
-            </Link>
-            {boutique.telephone && (
-              <a
-                href={`tel:${boutique.telephone}`}
-                className="bg-blue text-white text-sm font-semibold px-5 py-2.5 rounded-lg"
-              >
-                📞 Appeler
-              </a>
-            )}
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                className="bg-green text-white text-sm font-semibold px-5 py-2.5 rounded-lg"
-              >
-                💬 WhatsApp
-              </a>
-            )}
-            {mapsUrl && (
-              <a
-                href={mapsUrl}
-                target="_blank"
-                className="border border-line text-navy text-sm font-semibold px-5 py-2.5 rounded-lg"
-              >
-                📍 Itinéraire
-              </a>
-            )}
-            <QrCodeButton
-              url={`${SITE_URL}/boutique/${boutique.id}`}
-              label="Partager (QR)"
-            />
-          </div>
-
-          {boutique.horaires && (
-            <p className="text-sm text-inkSoft mb-1">🕐 {boutique.horaires}</p>
-          )}
-          <div className="flex gap-4 text-sm">
-            {boutique.facebook && (
-              <a href={boutique.facebook} target="_blank" className="text-blue">
-                Facebook
-              </a>
-            )}
-            {boutique.instagram && (
-              <a href={boutique.instagram} target="_blank" className="text-blue">
-                Instagram
-              </a>
-            )}
-          </div>
-        </div>
-
-        {boutique.services.length > 0 && (
-          <div className="bg-white border border-line rounded-card p-8 mb-6">
-            <h2 className="font-display text-base text-navy mb-4">Services proposés</h2>
-            <div className="flex flex-wrap gap-2">
-              {boutique.services.map((s: (typeof boutique.services)[number]) => (
-                <span
-                  key={s.id}
-                  className="text-sm bg-paper border border-line px-3 py-1.5 rounded-full text-navy"
-                >
-                  🔧 {s.nom}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {boutique.products.length > 0 && (
-          <div className="bg-white border border-line rounded-card p-8 mb-6">
-            <h2 className="font-display text-base text-navy mb-4">Produits disponibles</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {boutique.products.map((p: (typeof boutique.products)[number]) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between border border-line rounded-lg px-4 py-3 text-sm"
-                >
-                  <div>
-                    <div className="font-semibold text-navy">{p.nom}</div>
-                    <div className="text-xs text-inkSoft">{p.categorie}</div>
-                  </div>
-                  <span className="font-mono text-navy">{p.prix.toFixed(0)} DT</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <ReviewSection
-          boutiqueId={boutique.id}
-          initialReviews={boutique.reviews.map((r: (typeof boutique.reviews)[number]) => ({
-            id: r.id,
-            nom: r.nom,
-            note: r.note,
-            commentaire: r.commentaire,
-            createdAt: r.createdAt.toISOString(),
-          }))}
-        />
-      </section>
-    </main>
+    <ShopProfileBody
+      boutique={{
+        id: boutique.id,
+        nom: boutique.nom,
+        description: boutique.description,
+        adresse: boutique.adresse,
+        delegation: boutique.delegation,
+        gouvernorat: boutique.gouvernorat,
+        ville: boutique.ville,
+        verified: boutique.verified,
+        plan: boutique.plan,
+        telephone: boutique.telephone,
+        horaires: boutique.horaires,
+        facebook: boutique.facebook,
+        instagram: boutique.instagram,
+        services: boutique.services.map((s: (typeof boutique.services)[number]) => ({ id: s.id, nom: s.nom })),
+        photos: boutique.photos.map((p: (typeof boutique.photos)[number]) => ({ id: p.id, url: p.url })),
+        videos: boutique.videos.map((v: (typeof boutique.videos)[number]) => ({
+          id: v.id,
+          url: v.url,
+          titre: v.titre,
+          description: v.description,
+        })),
+        products: boutique.products.map((p: (typeof boutique.products)[number]) => ({
+          id: p.id,
+          nom: p.nom,
+          categorie: p.categorie,
+          photoUrl: p.photoUrl,
+          prix: p.prix,
+        })),
+        reviews: boutique.reviews.map((r: (typeof boutique.reviews)[number]) => ({
+          id: r.id,
+          nom: r.nom,
+          note: r.note,
+          commentaire: r.commentaire,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      }}
+      avgNote={avgNote}
+      mapsUrl={mapsUrl}
+      whatsappUrl={whatsappUrl}
+      siteUrl={SITE_URL}
+    />
   );
 }

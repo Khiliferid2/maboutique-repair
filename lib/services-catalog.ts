@@ -18,6 +18,21 @@ export const SERVICES_CATALOGUE = [
   "Autres",
 ];
 
+// Marques fréquemment citées dans les noms de service (utilisé pour le
+// filtre "Marque" de la recherche intelligente).
+export const MARQUES = [
+  "iPhone",
+  "Samsung",
+  "Xiaomi",
+  "Huawei",
+  "Oppo",
+  "Realme",
+  "Nokia",
+  "Sony",
+  "LG",
+  "Google Pixel",
+];
+
 // Catégories de produits vendus en boutique.
 export const PRODUCT_CATEGORIES = [
   "Chargeurs",

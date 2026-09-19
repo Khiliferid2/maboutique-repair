@@ -6,6 +6,7 @@ import Logo from "@/components/Logo";
 import { SkeletonProductCard } from "@/components/Skeleton";
 import { useCart } from "@/lib/cart-context";
 import { PRODUCT_CATEGORIES } from "@/lib/services-catalog";
+import { useLanguage } from "@/lib/language-context";
 
 type Product = {
   id: string;
@@ -20,6 +21,7 @@ type Product = {
 type BoutiqueOption = { id: string; nom: string; ville: string | null };
 
 export default function CataloguePage() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [boutiques, setBoutiques] = useState<BoutiqueOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function CataloguePage() {
             href="/panier"
             className="relative bg-navy text-white text-sm font-semibold px-4 py-2 rounded-lg"
           >
-            🛒 Panier
+            🛒 {t("catalogue.cart")}
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-orange text-navy text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                 {totalItems}
@@ -109,11 +111,9 @@ export default function CataloguePage() {
 
       <section className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="font-display text-2xl text-navy mb-2">
-          Pièces & accessoires
+          {t("catalogue.title")}
         </h1>
-        <p className="text-inkSoft mb-6">
-          Chargeurs, écrans, batteries, coques... vendus par des ateliers partout en Tunisie.
-        </p>
+        <p className="text-inkSoft mb-6">{t("catalogue.subtitle")}</p>
 
         {notice && (
           <div className="mb-4 text-sm bg-blue/10 border border-blue/30 text-blue rounded-lg px-4 py-2">
@@ -126,7 +126,7 @@ export default function CataloguePage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && load()}
-            placeholder="Rechercher un produit..."
+            placeholder={t("catalogue.searchPlaceholder")}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white flex-1 min-w-[200px]"
           />
           <select
@@ -134,7 +134,7 @@ export default function CataloguePage() {
             onChange={(e) => setCategorie(e.target.value)}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white"
           >
-            <option value="">Toutes catégories</option>
+            <option value="">{t("catalogue.allCategories")}</option>
             {PRODUCT_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -144,7 +144,7 @@ export default function CataloguePage() {
             onChange={(e) => setBoutiqueId(e.target.value)}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-white"
           >
-            <option value="">Toutes les boutiques</option>
+            <option value="">{t("catalogue.allShops")}</option>
             {boutiques.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.nom}{b.ville ? ` — ${b.ville}` : ""}
@@ -155,14 +155,14 @@ export default function CataloguePage() {
             onClick={() => load()}
             className="bg-blue text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
           >
-            🔍 Filtrer
+            🔍 {t("catalogue.filter")}
           </button>
           {hasFilters && (
             <button
               onClick={resetFilters}
               className="text-sm font-semibold text-inkSoft px-3 py-2.5"
             >
-              ✕ Réinitialiser
+              ✕ {t("catalogue.reset")}
             </button>
           )}
         </div>
@@ -175,7 +175,7 @@ export default function CataloguePage() {
             <SkeletonProductCard />
           </div>
         ) : products.length === 0 ? (
-          <p className="text-sm text-inkSoft">Aucun produit disponible pour ce filtre.</p>
+          <p className="text-sm text-inkSoft">{t("catalogue.noResults")}</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {products.map((p, idx) => (
@@ -209,7 +209,7 @@ export default function CataloguePage() {
                     onClick={() => handleAdd(p)}
                     className="bg-navy text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
                   >
-                    + Ajouter
+                    + {t("catalogue.add")}
                   </button>
                 </div>
               </div>

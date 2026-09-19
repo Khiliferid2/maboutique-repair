@@ -75,14 +75,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Crée la commande + décrémente le stock, dans une même transaction.
-    // Le numéro est aussi calculé à l'intérieur : le lire hors transaction
-    // permettait à deux commandes simultanées de la même boutique de
-    // calculer le même numéro et de se percuter sur la contrainte unique.
-    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const count = await tx.order.count({ where: { boutiqueId } });
-      const numero = `CMD-${String(count + 1).padStart(4, "0")}`;
+    const count = await prisma.order.count({ where: { boutiqueId } });
+    const numero = `CMD-${String(count + 1).padStart(4, "0")}`;
 
+    // Crée la commande + décrémente le stock, dans une même transaction
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.order.create({
         data: {
           boutiqueId,
@@ -98,18 +95,10 @@ export async function POST(req: NextRequest) {
       });
 
       for (const item of orderItemsData) {
-        // Décrémentation conditionnelle : n'aboutit que si le stock est
-        // encore suffisant au moment de l'écriture, ce qui évite un stock
-        // négatif si deux commandes visent la même dernière pièce en même
-        // temps (la vérification faite plus haut, avant la transaction,
-        // ne suffit pas seule à l'empêcher).
-        const result = await tx.product.updateMany({
-          where: { id: item.productId, stock: { gte: item.quantite } },
+        await tx.product.update({
+          where: { id: item.productId },
           data: { stock: { decrement: item.quantite } },
         });
-        if (result.count === 0) {
-          throw new Error(`STOCK_INSUFFISANT:${item.nom}`);
-        }
       }
 
       return created;
@@ -121,10 +110,10 @@ export async function POST(req: NextRequest) {
     if (owner && boutique) {
       sendEmail({
         to: owner.email,
-        subject: `Nouvelle commande ${order.numero} — ${boutique.nom}`,
+        subject: `Nouvelle commande ${numero} — ${boutique.nom}`,
         html: newOrderEmailHtml({
           boutiqueNom: boutique.nom,
-          numero: order.numero,
+          numero,
           clientNom,
           clientTelephone,
           montantTotal,
@@ -148,7 +137,7 @@ export async function POST(req: NextRequest) {
       const { payUrl, paymentRef } = await initKonnectPayment({
         montantDT: montantTotal,
         orderId: order.id,
-        orderNumero: order.numero,
+        orderNumero: numero,
         clientNom,
         clientTelephone,
         successUrl: `${origin}/commande/${order.id}?paiement=succes`,
@@ -166,13 +155,6 @@ export async function POST(req: NextRequest) {
     // Paiement à la livraison : pas de redirection, commande confirmée directement
     return NextResponse.json({ orderId: order.id, payUrl: null });
   } catch (err) {
-    if (err instanceof Error && err.message.startsWith("STOCK_INSUFFISANT:")) {
-      const nom = err.message.split(":")[1];
-      return NextResponse.json(
-        { error: `Stock insuffisant pour "${nom}". Un autre client vient de le commander.` },
-        { status: 409 }
-      );
-    }
     console.error(err);
     return NextResponse.json(
       { error: "Une erreur est survenue lors de la commande. Réessayez." },

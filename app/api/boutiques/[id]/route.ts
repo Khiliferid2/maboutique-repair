@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const boutique = await prisma.boutique.findFirst({
     where: { id: params.id, publie: true },
-    include: { services: true, products: true, photos: true },
+    include: { services: true, products: true, photos: true, videos: true },
   });
 
   if (!boutique) {

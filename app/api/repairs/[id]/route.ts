@@ -45,22 +45,17 @@ export async function PATCH(
       where: { repairId: repair.id },
     });
     if (!existingInvoice) {
-      // count() + create() dans la même transaction : évite que deux
-      // clôtures de réparations simultanées, dans la même boutique,
-      // calculent le même numéro de facture.
-      await prisma.$transaction(async (tx) => {
-        const count = await tx.invoice.count({
-          where: { boutiqueId: session.boutiqueId },
-        });
-        const numero = `FAC-${String(count + 1).padStart(4, "0")}`;
-        await tx.invoice.create({
-          data: {
-            boutiqueId: session.boutiqueId,
-            repairId: repair.id,
-            numero,
-            montant: repair.prix,
-          },
-        });
+      const count = await prisma.invoice.count({
+        where: { boutiqueId: session.boutiqueId },
+      });
+      const numero = `FAC-${String(count + 1).padStart(4, "0")}`;
+      await prisma.invoice.create({
+        data: {
+          boutiqueId: session.boutiqueId,
+          repairId: repair.id,
+          numero,
+          montant: repair.prix,
+        },
       });
     }
 

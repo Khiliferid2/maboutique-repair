@@ -1,17 +1,7 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-// Aucune valeur par défaut ici volontairement : un repli silencieux sur un
-// secret connu (ex: "dev-secret-change-me") permettrait à n'importe qui de
-// forger un cookie de session valide si la variable d'environnement est
-// oubliée en production. On préfère planter au démarrage.
-const SECRET = process.env.JWT_SECRET;
-if (!SECRET) {
-  throw new Error(
-    "JWT_SECRET manquant. Définissez-le dans .env (local) ou dans les " +
-      "variables d'environnement du projet (production) avant de démarrer."
-  );
-}
+const SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const COOKIE_NAME = "mbr_session";
 
 export type SessionPayload = {

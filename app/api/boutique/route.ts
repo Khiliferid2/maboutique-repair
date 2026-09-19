@@ -9,7 +9,7 @@ export async function GET() {
 
   const boutique = await prisma.boutique.findUnique({
     where: { id: session.boutiqueId },
-    include: { services: true, products: true, photos: true },
+    include: { services: true, products: true, photos: true, videos: true },
   });
   return NextResponse.json(boutique);
 }
@@ -72,7 +72,7 @@ export async function PATCH(req: NextRequest) {
 
   const fresh = await prisma.boutique.findUnique({
     where: { id: session.boutiqueId },
-    include: { services: true, products: true },
+    include: { services: true, products: true, photos: true, videos: true },
   });
 
   return NextResponse.json(fresh);
