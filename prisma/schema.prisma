@@ -49,6 +49,7 @@ model Boutique {
   services Service[]
   products Product[]
   photos   Photo[]
+  videos   Video[]
   orders   Order[]
   reviews  Review[]
   demandes RepairRequest[]
@@ -168,6 +169,16 @@ model Photo {
   boutique   Boutique @relation(fields: [boutiqueId], references: [id])
   url        String
   createdAt  DateTime @default(now())
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  boutiqueId  String
+  boutique    Boutique @relation(fields: [boutiqueId], references: [id])
+  url         String
+  titre       String?
+  description String?
+  createdAt   DateTime @default(now())
 }
 
 model User {
