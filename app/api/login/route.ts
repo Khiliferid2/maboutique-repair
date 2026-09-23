@@ -8,15 +8,20 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) {
+    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
       return NextResponse.json(
         { error: "Email et mot de passe requis." },
         { status: 400 }
       );
     }
 
+    // Les emails sont stockés en minuscules (voir register). On normalise
+    // aussi ici pour que la casse saisie à la connexion n'empêche jamais
+    // de retrouver le compte.
+    const normalizedEmail = email.trim().toLowerCase();
+
     const ip = req.headers.get("x-forwarded-for") || "unknown";
-    const rateLimitKey = `${ip}:${email.toLowerCase()}`;
+    const rateLimitKey = `${ip}:${normalizedEmail}`;
     if (isRateLimited(rateLimitKey)) {
       return NextResponse.json(
         {
@@ -27,7 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       return NextResponse.json(
         { error: "Email ou mot de passe incorrect." },

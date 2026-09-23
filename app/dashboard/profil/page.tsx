@@ -11,10 +11,7 @@ type Product = {
   prix: number;
   categorie: string | null;
   stock: number;
-  photoUrl: string | null;
 };
-type Photo = { id: string; url: string };
-type Video = { id: string; url: string; titre: string | null; description: string | null };
 type Boutique = {
   id: string;
   nom: string;
@@ -34,8 +31,6 @@ type Boutique = {
   plan: string;
   services: Service[];
   products: Product[];
-  photos: Photo[];
-  videos: Video[];
 };
 
 export default function ProfilPage() {
@@ -44,10 +39,7 @@ export default function ProfilPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [form, setForm] = useState<Record<string, string>>({});
-  const [newProduct, setNewProduct] = useState({ nom: "", prix: "", categorie: PRODUCT_CATEGORIES[0], stock: "10", photoUrl: "" });
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [videoForm, setVideoForm] = useState({ url: "", titre: "", description: "" });
+  const [newProduct, setNewProduct] = useState({ nom: "", prix: "", categorie: PRODUCT_CATEGORIES[0], stock: "10" });
 
   async function load() {
     setLoading(true);
@@ -129,88 +121,12 @@ export default function ProfilPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newProduct),
     });
-    setNewProduct({ nom: "", prix: "", categorie: PRODUCT_CATEGORIES[0], stock: "10", photoUrl: "" });
+    setNewProduct({ nom: "", prix: "", categorie: PRODUCT_CATEGORIES[0], stock: "10" });
     load();
   }
 
   async function removeProduct(id: string) {
     await fetch(`/api/products/${id}`, { method: "DELETE" });
-    load();
-  }
-
-  async function uploadMedia(file: File, resourceType: "image" | "video") {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset) {
-      setMessage("Configurez NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME et NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET sur Vercel pour activer l’upload direct.");
-      return null;
-    }
-    setUploading(true);
-    try {
-      const data = new FormData();
-      data.append("file", file);
-      data.append("upload_preset", uploadPreset);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, { method: "POST", body: data });
-      const json = await res.json();
-      if (!res.ok || !json.secure_url) throw new Error("Upload impossible");
-      return json.secure_url as string;
-    } catch {
-      setMessage("Échec de l’upload. Vérifiez la configuration Cloudinary.");
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function addPhoto(e: React.FormEvent) {
-    e.preventDefault();
-    if (!mediaUrl.trim()) return;
-    await fetch("/api/photos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: mediaUrl }) });
-    setMediaUrl("");
-    load();
-  }
-
-  async function handlePhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadMedia(file, "image");
-    if (url) {
-      await fetch("/api/photos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
-      load();
-    }
-    e.target.value = "";
-  }
-
-  async function removePhoto(id: string) {
-    await fetch(`/api/photos?id=${id}`, { method: "DELETE" });
-    load();
-  }
-
-  async function addVideo(e: React.FormEvent) {
-    e.preventDefault();
-    if (!videoForm.url.trim()) return;
-    await fetch("/api/videos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(videoForm) });
-    setVideoForm({ url: "", titre: "", description: "" });
-    load();
-  }
-
-  async function handleVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      setMessage("La vidéo doit faire moins de 50 Mo.");
-      return;
-    }
-    const url = await uploadMedia(file, "video");
-    if (url) {
-      await fetch("/api/videos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, titre: file.name.replace(/\.[^.]+$/, "") }) });
-      load();
-    }
-    e.target.value = "";
-  }
-
-  async function removeVideo(id: string) {
-    await fetch(`/api/videos?id=${id}`, { method: "DELETE" });
     load();
   }
 
@@ -483,12 +399,6 @@ export default function ProfilPage() {
             onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
             className="border border-line rounded-lg px-4 py-2.5 text-sm bg-paper md:col-span-2"
           />
-          <input
-            placeholder="URL photo du produit (optionnel)"
-            value={newProduct.photoUrl}
-            onChange={(e) => setNewProduct({ ...newProduct, photoUrl: e.target.value })}
-            className="border border-line rounded-lg px-4 py-2.5 text-sm bg-paper md:col-span-2"
-          />
           <button
             type="submit"
             className="md:col-span-4 bg-navy text-white font-semibold py-2.5 rounded-lg"
@@ -519,65 +429,6 @@ export default function ProfilPage() {
                   >
                     Supprimer
                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* --- Photos --- */}
-      <div className="bg-white border border-line rounded-card p-6">
-        <h2 className="font-display text-base text-navy mb-1">📸 Photos de la boutique</h2>
-        <p className="text-sm text-inkSoft mb-4">Ajoutez directement vos photos. L’upload utilise Cloudinary quand il est configuré, avec une URL publique comme solution de secours.</p>
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <label className="border border-blue text-blue font-semibold px-5 py-2.5 rounded-lg cursor-pointer text-center">
-            {uploading ? "Upload..." : "📤 Choisir une photo"}
-            <input type="file" accept="image/*" onChange={handlePhotoFile} className="hidden" disabled={uploading} />
-          </label>
-          <form onSubmit={addPhoto} className="flex flex-1 gap-3">
-            <input required value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} placeholder="Ou URL : https://.../photo.jpg" className="flex-1 border border-line rounded-lg px-4 py-2.5 text-sm bg-paper" />
-            <button className="bg-blue text-white font-semibold px-5 py-2.5 rounded-lg">+ URL</button>
-          </form>
-        </div>
-        {boutique.photos.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {boutique.photos.map((photo) => (
-              <div key={photo.id} className="relative group border border-line rounded-lg overflow-hidden bg-paper">
-                <img src={photo.url} alt="Photo boutique" className="w-full h-32 object-cover" />
-                <button onClick={() => removePhoto(photo.id)} className="absolute top-2 right-2 bg-white/90 text-red text-xs font-semibold px-2 py-1 rounded">Supprimer</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* --- Vidéos --- */}
-      <div className="bg-white border border-line rounded-card p-6">
-        <h2 className="font-display text-base text-navy mb-1">🎥 Vidéos courtes de vos services</h2>
-        <p className="text-sm text-inkSoft mb-4">Montrez votre savoir-faire : réparation écran, microsoudure, diagnostic, etc. Vous pouvez importer une vidéo courte ou fournir son URL.</p>
-        <form onSubmit={addVideo} className="space-y-3 mb-5">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <label className="border border-navy text-navy font-semibold px-5 py-2.5 rounded-lg cursor-pointer text-center">
-              {uploading ? "Upload..." : "🎥 Choisir une vidéo"}
-              <input type="file" accept="video/*" onChange={handleVideoFile} className="hidden" disabled={uploading} />
-            </label>
-            <input required value={videoForm.url} onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })} placeholder="Ou URL : https://.../video.mp4" className="flex-1 border border-line rounded-lg px-4 py-2.5 text-sm bg-paper" />
-          </div>
-          <div className="grid md:grid-cols-2 gap-3">
-            <input value={videoForm.titre} onChange={(e) => setVideoForm({ ...videoForm, titre: e.target.value })} placeholder="Titre de la vidéo" className="border border-line rounded-lg px-4 py-2.5 text-sm bg-paper" />
-            <input value={videoForm.description} onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })} placeholder="Description courte" className="border border-line rounded-lg px-4 py-2.5 text-sm bg-paper" />
-          </div>
-          <button className="bg-navy text-white font-semibold px-5 py-2.5 rounded-lg">+ Ajouter la vidéo URL</button>
-        </form>
-        {boutique.videos.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {boutique.videos.map((video) => (
-              <div key={video.id} className="border border-line rounded-lg overflow-hidden">
-                <video src={video.url} controls preload="metadata" className="w-full aspect-video bg-black" />
-                <div className="p-3 flex items-start justify-between gap-3">
-                  <div><p className="font-semibold text-navy text-sm">{video.titre || "Vidéo de service"}</p><p className="text-xs text-inkSoft">{video.description}</p></div>
-                  <button onClick={() => removeVideo(video.id)} className="text-red text-xs font-semibold shrink-0">Supprimer</button>
                 </div>
               </div>
             ))}

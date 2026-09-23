@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, escapeHtml } from "@/lib/email";
 
 export async function POST(
   req: NextRequest,
@@ -51,7 +51,7 @@ export async function POST(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 480px;">
           <h2 style="color:#0F1F45;">💰 Votre devis est prêt</h2>
-          <p>${request.boutique.nom} vous propose un devis de <b>${total.toFixed(0)} DT</b> pour votre réparation.</p>
+          <p>${escapeHtml(request.boutique.nom)} vous propose un devis de <b>${total.toFixed(0)} DT</b> pour votre réparation.</p>
           <p>Consultez et répondez au devis via le lien de suivi qui vous a été envoyé.</p>
         </div>
       `,

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     where: {
       stock: { gt: 0 },
       boutique: { publie: true },
-      ...(q ? { nom: { contains: q } } : {}),
+      ...(q ? { nom: { contains: q, mode: "insensitive" } } : {}),
       ...(categorie ? { categorie } : {}),
       ...(boutiqueId ? { boutiqueId } : {}),
     },

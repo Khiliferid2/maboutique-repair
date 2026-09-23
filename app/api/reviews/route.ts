@@ -28,18 +28,29 @@ export async function POST(req: NextRequest) {
 
     const { boutiqueId, nom, note, commentaire } = await req.json();
 
-    if (!boutiqueId || !nom || !note) {
+    if (!boutiqueId || !nom || !note || typeof nom !== "string") {
       return NextResponse.json(
         { error: "Nom et note requis." },
         { status: 400 }
       );
     }
     const noteInt = parseInt(note);
-    if (noteInt < 1 || noteInt > 5) {
+    if (!Number.isInteger(noteInt) || noteInt < 1 || noteInt > 5) {
       return NextResponse.json(
         { error: "La note doit être entre 1 et 5." },
         { status: 400 }
       );
+    }
+
+    // Formulaire public sans authentification : on borne la taille des
+    // champs texte pour éviter un abus de stockage.
+    const cNom = nom.trim().slice(0, 120);
+    const cCommentaire =
+      typeof commentaire === "string" && commentaire.trim()
+        ? commentaire.trim().slice(0, 1000)
+        : null;
+    if (!cNom) {
+      return NextResponse.json({ error: "Nom requis." }, { status: 400 });
     }
 
     const boutique = await prisma.boutique.findFirst({
@@ -52,9 +63,9 @@ export async function POST(req: NextRequest) {
     const review = await prisma.review.create({
       data: {
         boutiqueId,
-        nom,
+        nom: cNom,
         note: noteInt,
-        commentaire: commentaire || null,
+        commentaire: cCommentaire,
       },
     });
     return NextResponse.json(review);

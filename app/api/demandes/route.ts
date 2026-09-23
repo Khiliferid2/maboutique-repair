@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, escapeHtml } from "@/lib/email";
 import { isRateLimited } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -25,12 +25,36 @@ export async function POST(req: NextRequest) {
       clientEmail,
     } = await req.json();
 
-    if (!boutiqueId || !typeAppareil || !probleme || !clientNom || !clientTelephone) {
+    if (
+      !boutiqueId ||
+      !typeAppareil ||
+      !probleme ||
+      !clientNom ||
+      !clientTelephone ||
+      typeof typeAppareil !== "string" ||
+      typeof probleme !== "string" ||
+      typeof clientNom !== "string" ||
+      typeof clientTelephone !== "string"
+    ) {
       return NextResponse.json(
         { error: "Merci de remplir tous les champs obligatoires." },
         { status: 400 }
       );
     }
+
+    // Un formulaire public sans authentification : on borne la taille de
+    // chaque champ pour éviter qu'un visiteur ne stocke des textes énormes
+    // en base (abus de stockage / déni de service applicatif).
+    const cTypeAppareil = typeAppareil.trim().slice(0, 80);
+    const cMarque = typeof marque === "string" ? marque.trim().slice(0, 80) : "";
+    const cModele = typeof modele === "string" ? modele.trim().slice(0, 80) : "";
+    const cProbleme = probleme.trim().slice(0, 2000);
+    const cClientNom = clientNom.trim().slice(0, 120);
+    const cClientTelephone = clientTelephone.trim().slice(0, 30);
+    const cClientEmail =
+      typeof clientEmail === "string" && clientEmail.trim()
+        ? clientEmail.trim().slice(0, 160)
+        : null;
 
     const boutique = await prisma.boutique.findFirst({
       where: { id: boutiqueId, publie: true },
@@ -42,14 +66,14 @@ export async function POST(req: NextRequest) {
     const request = await prisma.repairRequest.create({
       data: {
         boutiqueId,
-        typeAppareil,
-        marque: marque || null,
-        modele: modele || null,
-        probleme,
+        typeAppareil: cTypeAppareil,
+        marque: cMarque || null,
+        modele: cModele || null,
+        probleme: cProbleme,
         photoUrl: photoUrl || null,
-        clientNom,
-        clientTelephone,
-        clientEmail: clientEmail || null,
+        clientNom: cClientNom,
+        clientTelephone: cClientTelephone,
+        clientEmail: cClientEmail,
       },
     });
 
@@ -62,9 +86,9 @@ export async function POST(req: NextRequest) {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 480px;">
             <h2 style="color:#0F1F45;">🔧 Nouvelle demande de réparation</h2>
-            <p><b>${clientNom}</b> (${clientTelephone}) a besoin d'une réparation :</p>
-            <p><b>${typeAppareil}</b> ${marque ? `— ${marque} ${modele || ""}` : ""}</p>
-            <p>${probleme}</p>
+            <p><b>${escapeHtml(cClientNom)}</b> (${escapeHtml(cClientTelephone)}) a besoin d'une réparation :</p>
+            <p><b>${escapeHtml(cTypeAppareil)}</b> ${cMarque ? `— ${escapeHtml(cMarque)} ${escapeHtml(cModele)}` : ""}</p>
+            <p>${escapeHtml(cProbleme)}</p>
             <p>Connectez-vous à votre tableau de bord pour envoyer un devis.</p>
           </div>
         `,

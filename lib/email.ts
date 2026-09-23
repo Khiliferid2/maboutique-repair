@@ -12,6 +12,22 @@
 // site continue de fonctionner normalement (les commandes restent visibles
 // dans /dashboard/commandes).
 
+// Échappe les caractères HTML spéciaux. Toutes les valeurs insérées dans les
+// templates ci-dessous proviennent en partie de formulaires publics, sans
+// authentification (commande, demande de réparation...). Sans cet
+// échappement, un visiteur pourrait saisir "<img src=x onerror=...>" ou de
+// faux liens dans son nom/message et voir ce code interprété dans le client
+// mail du propriétaire de la boutique (ou du client final) qui reçoit la
+// notification — une forme d'injection HTML/XSS via email.
+export function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
 }
@@ -56,11 +72,11 @@ export function newOrderEmailHtml(params: {
 }): string {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2 style="color: #0F1F45;">🛒 Nouvelle commande — ${params.numero}</h2>
+      <h2 style="color: #0F1F45;">🛒 Nouvelle commande — ${escapeHtml(params.numero)}</h2>
       <p>Bonjour,</p>
-      <p>Vous avez reçu une nouvelle commande sur <b>${params.boutiqueNom}</b> :</p>
+      <p>Vous avez reçu une nouvelle commande sur <b>${escapeHtml(params.boutiqueNom)}</b> :</p>
       <ul>
-        <li>Client : ${params.clientNom} (${params.clientTelephone})</li>
+        <li>Client : ${escapeHtml(params.clientNom)} (${escapeHtml(params.clientTelephone)})</li>
         <li>Montant : ${params.montantTotal.toFixed(0)} DT</li>
       </ul>
       <p>Connectez-vous à votre tableau de bord pour la traiter.</p>
@@ -89,12 +105,12 @@ export function repairReadyEmailHtml(params: {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
       <h2 style="color: #0F1F45;">✅ Votre appareil est prêt !</h2>
-      <p>Bonjour ${params.clientNom},</p>
-      <p>Bonne nouvelle : votre <b>${params.appareil}</b> a été réparé chez <b>${params.boutiqueNom}</b> et est prêt à être récupéré.</p>
+      <p>Bonjour ${escapeHtml(params.clientNom)},</p>
+      <p>Bonne nouvelle : votre <b>${escapeHtml(params.appareil)}</b> a été réparé chez <b>${escapeHtml(params.boutiqueNom)}</b> et est prêt à être récupéré.</p>
       <p>Montant à régler : <b>${params.prix.toFixed(0)} DT</b></p>
       ${
         params.boutiqueTelephone
-          ? `<p>Pour toute question, contactez-nous au ${params.boutiqueTelephone}.</p>`
+          ? `<p>Pour toute question, contactez-nous au ${escapeHtml(params.boutiqueTelephone)}.</p>`
           : ""
       }
       <p style="color: #6B7280; font-size: 12px;">MaBoutique Repair</p>

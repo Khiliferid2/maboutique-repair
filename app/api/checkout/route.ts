@@ -26,12 +26,31 @@ export async function POST(req: NextRequest) {
       modePaiement, // "carte" | "livraison"
     } = body;
 
-    if (!boutiqueId || !items?.length || !clientNom || !clientTelephone || !clientAdresse) {
+    if (
+      !boutiqueId ||
+      !items?.length ||
+      !clientNom ||
+      !clientTelephone ||
+      !clientAdresse ||
+      typeof clientNom !== "string" ||
+      typeof clientTelephone !== "string" ||
+      typeof clientAdresse !== "string"
+    ) {
       return NextResponse.json(
         { error: "Informations de commande incomplètes." },
         { status: 400 }
       );
     }
+
+    // Formulaire public sans authentification : on borne la taille de chaque
+    // champ texte pour éviter un abus de stockage (textes énormes en base).
+    const cClientNom = clientNom.trim().slice(0, 120);
+    const cClientTelephone = clientTelephone.trim().slice(0, 30);
+    const cClientAdresse = clientAdresse.trim().slice(0, 300);
+    const cClientVille =
+      typeof clientVille === "string" && clientVille.trim()
+        ? clientVille.trim().slice(0, 80)
+        : null;
 
     // Recharge les produits depuis la base pour valider prix et stock réels
     // (on ne fait jamais confiance aux prix envoyés par le client)
@@ -57,52 +76,71 @@ export async function POST(req: NextRequest) {
 
     for (const item of items as { productId: string; quantite: number }[]) {
       const product = products.find((p: (typeof products)[number]) => p.id === item.productId)!;
-      if (item.quantite < 1) {
+      const quantite = Number(item.quantite);
+      if (!Number.isFinite(quantite) || !Number.isInteger(quantite) || quantite < 1) {
         return NextResponse.json({ error: "Quantité invalide." }, { status: 400 });
       }
-      if (product.stock < item.quantite) {
+      if (product.stock < quantite) {
         return NextResponse.json(
           { error: `Stock insuffisant pour "${product.nom}".` },
           { status: 409 }
         );
       }
-      montantTotal += product.prix * item.quantite;
+      montantTotal += product.prix * quantite;
       orderItemsData.push({
         productId: product.id,
         nom: product.nom,
         prix: product.prix,
-        quantite: item.quantite,
+        quantite,
       });
     }
 
     const count = await prisma.order.count({ where: { boutiqueId } });
     const numero = `CMD-${String(count + 1).padStart(4, "0")}`;
 
-    // Crée la commande + décrémente le stock, dans une même transaction
-    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const created = await tx.order.create({
-        data: {
-          boutiqueId,
-          numero,
-          clientNom,
-          clientTelephone,
-          clientAdresse,
-          clientVille: clientVille || null,
-          modePaiement,
-          montantTotal,
-          items: { create: orderItemsData },
-        },
-      });
+    // Crée la commande + décrémente le stock, dans une même transaction.
+    // Le stock initial a été vérifié plus haut, mais deux clients peuvent
+    // commander en même temps : sans re-vérification atomique ici, le
+    // stock pourrait passer sous zéro (survente). On rend donc la
+    // décrémentation elle-même conditionnelle (updateMany avec stock >=
+    // quantité) et on annule toute la commande si un seul produit a été
+    // vendu entre-temps par une autre commande concurrente.
+    let order;
+    try {
+      order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        for (const item of orderItemsData) {
+          const result = await tx.product.updateMany({
+            where: { id: item.productId, stock: { gte: item.quantite } },
+            data: { stock: { decrement: item.quantite } },
+          });
+          if (result.count === 0) {
+            throw new Error("STOCK_INSUFFISANT");
+          }
+        }
 
-      for (const item of orderItemsData) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantite } },
+        return tx.order.create({
+          data: {
+            boutiqueId,
+            numero,
+            clientNom: cClientNom,
+            clientTelephone: cClientTelephone,
+            clientAdresse: cClientAdresse,
+            clientVille: cClientVille,
+            modePaiement,
+            montantTotal,
+            items: { create: orderItemsData },
+          },
         });
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === "STOCK_INSUFFISANT") {
+        return NextResponse.json(
+          { error: "Le stock a changé entre-temps, merci de vérifier votre panier et réessayer." },
+          { status: 409 }
+        );
       }
-
-      return created;
-    });
+      throw err;
+    }
 
     // Notifie le propriétaire de la boutique par email (best-effort, ne bloque jamais la commande)
     const owner = await prisma.user.findFirst({ where: { boutiqueId } });
@@ -114,8 +152,8 @@ export async function POST(req: NextRequest) {
         html: newOrderEmailHtml({
           boutiqueNom: boutique.nom,
           numero,
-          clientNom,
-          clientTelephone,
+          clientNom: cClientNom,
+          clientTelephone: cClientTelephone,
           montantTotal,
         }),
       });
@@ -138,8 +176,8 @@ export async function POST(req: NextRequest) {
         montantDT: montantTotal,
         orderId: order.id,
         orderNumero: numero,
-        clientNom,
-        clientTelephone,
+        clientNom: cClientNom,
+        clientTelephone: cClientTelephone,
         successUrl: `${origin}/commande/${order.id}?paiement=succes`,
         failUrl: `${origin}/commande/${order.id}?paiement=echec`,
       });

@@ -1,7 +1,32 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-const SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+// IMPORTANT : aucune valeur par défaut n'est utilisée ici. Un secret JWT
+// prévisible permettrait à n'importe qui de forger un cookie de session
+// (en choisissant lui-même boutiqueId, email...) et de prendre le contrôle
+// de n'importe quel compte. En production, l'absence de JWT_SECRET doit
+// donc empêcher le démarrage plutôt que de retomber silencieusement sur
+// une valeur connue de tous ceux qui lisent ce dépôt.
+function requireSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret && secret.length >= 16) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "JWT_SECRET manquant ou trop court. Définissez une variable d'environnement " +
+        "JWT_SECRET (chaîne aléatoire d'au moins 32 caractères) avant de démarrer en production."
+    );
+  }
+
+  // Uniquement toléré en développement local, avec avertissement explicite.
+  console.warn(
+    "[auth] JWT_SECRET absent ou faible — utilisation d'un secret de développement. " +
+      "Ne jamais déployer ainsi en production."
+  );
+  return "dev-only-insecure-secret-do-not-deploy";
+}
+
+const SECRET = requireSecret();
 const COOKIE_NAME = "mbr_session";
 
 export type SessionPayload = {
@@ -48,4 +73,4 @@ export function isSuperAdmin(session: SessionPayload | null): boolean {
   return session.email.toLowerCase() === adminEmail.toLowerCase();
 }
 
-export { COOKIE_NAME, SECRET };
+export { COOKIE_NAME };

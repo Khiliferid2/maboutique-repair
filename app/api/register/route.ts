@@ -17,9 +17,27 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { boutiqueNom, ville, telephone, adminNom, email, password } = body;
 
-    if (!boutiqueNom || !adminNom || !email || !password) {
+    if (
+      !boutiqueNom ||
+      !adminNom ||
+      !email ||
+      !password ||
+      typeof boutiqueNom !== "string" ||
+      typeof adminNom !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return NextResponse.json(
         { error: "Merci de remplir tous les champs obligatoires." },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "Adresse email invalide." },
         { status: 400 }
       );
     }
@@ -31,7 +49,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const cleanBoutiqueNom = boutiqueNom.trim().slice(0, 120);
+    const cleanAdminNom = adminNom.trim().slice(0, 120);
+    if (!cleanBoutiqueNom || !cleanAdminNom) {
+      return NextResponse.json(
+        { error: "Merci de remplir tous les champs obligatoires." },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return NextResponse.json(
         { error: "Cet email est déjà utilisé." },
@@ -43,17 +70,20 @@ export async function POST(req: NextRequest) {
 
     const boutique = await prisma.boutique.create({
       data: {
-        nom: boutiqueNom,
-        ville: ville || null,
-        telephone: telephone || null,
+        nom: cleanBoutiqueNom,
+        ville: typeof ville === "string" && ville.trim() ? ville.trim().slice(0, 80) : null,
+        telephone:
+          typeof telephone === "string" && telephone.trim()
+            ? telephone.trim().slice(0, 30)
+            : null,
       },
     });
 
     const user = await prisma.user.create({
       data: {
         boutiqueId: boutique.id,
-        nom: adminNom,
-        email,
+        nom: cleanAdminNom,
+        email: normalizedEmail,
         password: hashed,
         role: "admin",
       },
